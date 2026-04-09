@@ -1,0 +1,106 @@
+{
+  "extracted_metrics": {
+    "revenue": 18200000000,
+    "net_income": 1200000000,
+    "operating_expenses": 4800000000,
+    "assets_under_management": 850000000000,
+    "debt_to_equity": 0.42,
+    "equity_ratio": 0.7,
+    "risks": [
+      "Rising interest rates impacting bond portfolios",
+      "Regulatory pressures in key Asian markets",
+      "Geopolitical uncertainties affecting investments",
+      "Competitive pressure from digital-first insurers"
+    ],
+    "segment_performance": {
+      "Asia": "contributed 45% of revenue, up from 42% last quarter",
+      "Canada": "showed stable growth with 3% quarter-over-quarter increase",
+      "US": "faced headwinds with 2% decline due to market volatility"
+    },
+    "key_insights": "Manulife Financial reported strong Q3 results, with revenue reaching $18.2 billion and net income growing 15% year-over-year.",
+    "data_quality": "high"
+  },
+  "ground_truth": {
+    "revenue": 18200000000,
+    "net_income": 1200000000,
+    "operating_expenses": 4800000000,
+    "assets_under_management": 850000000000,
+    "debt_to_equity": 0.42,
+    "equity_ratio": 0.7,
+    "risks": [
+      "rising interest rates",
+      "regulatory pressures",
+      "geopolitical uncertainties",
+      "competitive pressure"
+    ]
+  },
+  "evaluation": {
+    "metrics_evaluation": {
+      "revenue": {
+        "extracted": 18200000000,
+        "expected": 18200000000,
+        "correct": true,
+        "confidence": 1.0
+      },
+      "net_income": {
+        "extracted": 1200000000,
+        "expected": 1200000000,
+        "correct": true,
+        "confidence": 1.0
+      },
+      "operating_expenses": {
+        "extracted": 4800000000,
+        "expected": 4800000000,
+        "correct": true,
+        "confidence": 1.0
+      },
+      "assets_under_management": {
+        "extracted": 850000000000,
+        "expected": 850000000000,
+        "correct": true,
+        "confidence": 1.0
+      },
+      "debt_to_equity": {
+        "extracted": 0.42,
+        "expected": 0.42,
+        "correct": true,
+        "confidence": 1.0
+      },
+      "equity_ratio": {
+        "extracted": 0.7,
+        "expected": 0.7,
+        "correct": true,
+        "confidence": 1.0
+      },
+      "risks": {
+        "extracted": [
+          "Rising interest rates impacting bond portfolios",
+          "Regulatory pressures in key Asian markets",
+          "Geopolitical uncertainties affecting investments",
+          "Competitive pressure from digital-first insurers"
+        ],
+        "expected": [
+          "rising interest rates",
+          "regulatory pressures",
+          "geopolitical uncertainties",
+          "competitive pressure"
+        ],
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0
+      }
+    },
+    "overall_accuracy": 1.0,
+    "field_scores": {
+      "revenue": 1.0,
+      "net_income": 1.0,
+      "operating_expenses": 1.0,
+      "assets_under_management": 1.0,
+      "debt_to_equity": 1.0,
+      "equity_ratio": 1.0,
+      "risks": 1.0
+    },
+    "issues": [],
+    "avg_confidence": 1.0
+  }
+}
