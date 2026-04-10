@@ -7,8 +7,7 @@ from pathlib import Path
 from src.rag_pipeline import RAGPipeline
 from src.extractor import FinancialMetricsExtractor
 from src.evaluator import ExtractionEvaluator, GROUND_TRUTH
-from src.utils import validate_json_structure, Config
-
+from src.utils import Config
 
 class TestRAGPipeline:
     """Test RAG pipeline functionality."""

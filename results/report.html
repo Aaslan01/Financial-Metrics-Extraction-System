@@ -1,0 +1,62 @@
+# Create example outputs folder
+mkdir -p results/examples
+
+# Create example extraction output
+cat > results/examples/extraction_example.json << 'EOF'
+{
+  "revenue": 18200000000,
+  "net_income": 1200000000,
+  "operating_expenses": 4800000000,
+  "assets_under_management": 850000000000,
+  "debt_to_equity": 0.42,
+  "equity_ratio": 0.7,
+  "risks": [
+    "Rising interest rates impacting bond portfolios",
+    "Regulatory pressures in key Asian markets",
+    "Geopolitical uncertainties affecting investments",
+    "Competitive pressure from digital-first insurers"
+  ],
+  "segment_performance": {
+    "Asia": "contributed 45% of revenue, up from 42% last quarter",
+    "Canada": "showed stable growth with 3% quarter-over-quarter increase",
+    "US": "faced headwinds with 2% decline due to market volatility"
+  },
+  "key_insights": "Manulife Financial reported strong Q3 results with revenue reaching $18.2 billion, up from $16.5 billion in Q2.",
+  "data_quality": "high"
+}
+EOF
+
+# Create example evaluation output
+cat > results/examples/evaluation_example.json << 'EOF'
+{
+  "overall_accuracy": 1.0,
+  "avg_confidence": 1.0,
+  "field_scores": {
+    "revenue": 1.0,
+    "net_income": 1.0,
+    "operating_expenses": 1.0,
+    "assets_under_management": 1.0,
+    "debt_to_equity": 1.0,
+    "equity_ratio": 1.0,
+    "risks": 1.0
+  },
+  "metrics_evaluation": {
+    "revenue": {
+      "extracted": 18200000000,
+      "expected": 18200000000,
+      "correct": true,
+      "confidence": 1.0
+    },
+    "risks": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0
+    }
+  },
+  "test_summary": {
+    "total_fields": 6,
+    "passed_fields": 6,
+    "hallucination_detected": false
+  }
+}
+EOF

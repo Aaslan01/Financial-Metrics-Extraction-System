@@ -1,185 +1,157 @@
 #!/usr/bin/env python3
-"""Unit and integration tests for Financial Metrics Extraction System."""
+"""Utility functions for logging, configuration, and error handling."""
 
-import pytest
+import logging
 import json
+from datetime import datetime
 from pathlib import Path
-from src.rag_pipeline import RAGPipeline
-from src.extractor import FinancialMetricsExtractor
-from src.evaluator import ExtractionEvaluator, GROUND_TRUTH
-from src.utils import validate_json_structure, Config
+from typing import Dict, Any
 
 
-class TestRAGPipeline:
-    """Test RAG pipeline functionality."""
+def setup_logging(log_file: str = "results/extraction.log") -> logging.Logger:
+    """
+    Setup logging configuration.
     
-    @pytest.fixture
-    def rag(self):
-        """Initialize RAG pipeline."""
-        rag = RAGPipeline()
-        rag.build_pipeline(["data/sample_financial_report.txt"])
-        return rag
-    
-    def test_pipeline_initialization(self, rag):
-        """Test that RAG pipeline initializes correctly."""
-        assert rag.vector_store is not None
-        assert rag.retriever is not None
-    
-    def test_document_retrieval(self, rag):
-        """Test that retrieval works."""
-        query = "What was the revenue?"
-        results = rag.retrieve(query)
+    Args:
+        log_file: Path to log file
         
-        assert len(results) > 0
-        assert all(isinstance(r, str) for r in results)
+    Returns:
+        Configured logger instance
+    """
+    # Create results directory if needed
+    Path("results").mkdir(exist_ok=True)
     
-    def test_retrieval_relevance(self, rag):
-        """Test that retrieved content is relevant."""
-        query = "revenue Q3"
-        results = rag.retrieve(query)
-        
-        # At least one result should contain revenue information
-        combined = " ".join(results).lower()
-        assert "revenue" in combined or "billion" in combined
+    logger = logging.getLogger("FinancialExtractor")
+    logger.setLevel(logging.DEBUG)
+    
+    # File handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(logging.DEBUG)
+    
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    
+    # Formatter
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+    
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
+    return logger
 
 
-class TestExtraction:
-    """Test extraction functionality."""
+def save_results(extraction_result: Dict, evaluation_result: Dict, 
+                output_file: str = "results/extraction_results.json") -> None:
+    """
+    Save extraction and evaluation results to JSON.
     
-    @pytest.fixture
-    def setup(self):
-        """Setup extraction test."""
-        rag = RAGPipeline()
-        rag.build_pipeline(["data/sample_financial_report.txt"])
-        extractor = FinancialMetricsExtractor()
-        return rag, extractor
+    Args:
+        extraction_result: Extracted metrics
+        evaluation_result: Evaluation metrics
+        output_file: Output file path
+    """
+    Path("results").mkdir(exist_ok=True)
     
-    def test_extractor_initialization(self, setup):
-        """Test that extractor initializes correctly."""
-        rag, extractor = setup
-        assert extractor.client is not None
-        assert extractor.model == "llama-3.1-8b-instant"
+    results = {
+        "timestamp": datetime.now().isoformat(),
+        "extraction": extraction_result,
+        "evaluation": evaluation_result,
+        "metadata": {
+            "model": "llama-3.1-8b-instant",
+            "embedding_model": "all-MiniLM-L6-v2",
+            "vector_db": "FAISS"
+        }
+    }
     
-    def test_extraction_returns_json(self, setup):
-        """Test that extraction returns valid JSON."""
-        rag, extractor = setup
-        context = rag.retrieve("Extract all financial metrics")
-        result = extractor.extract_metrics(context)
-        
-        assert isinstance(result, dict)
-        assert not ("error" in result and len(result) == 1)
+    with open(output_file, "w") as f:
+        json.dump(results, f, indent=2)
     
-    def test_extraction_structure(self, setup):
-        """Test that extracted JSON has required structure."""
-        rag, extractor = setup
-        context = rag.retrieve("Extract all financial metrics")
-        result = extractor.extract_metrics(context)
-        
-        required_fields = ["revenue", "net_income", "risks", "data_quality"]
-        for field in required_fields:
-            assert field in result or "error" in result
-    
-    def test_extraction_numeric_fields(self, setup):
-        """Test that numeric fields are numeric."""
-        rag, extractor = setup
-        context = rag.retrieve("Extract all financial metrics")
-        result = extractor.extract_metrics(context)
-        
-        if "error" not in result:
-            numeric_fields = ["revenue", "net_income", "operating_expenses"]
-            for field in numeric_fields:
-                if field in result and result[field] is not None:
-                    assert isinstance(result[field], (int, float))
+    print(f"✅ Results saved to {output_file}")
 
 
-class TestEvaluation:
-    """Test evaluation framework."""
+def validate_json_structure(data: Dict) -> bool:
+    """
+    Validate that extracted data has required structure.
     
-    @pytest.fixture
-    def evaluator(self):
-        """Initialize evaluator."""
-        return ExtractionEvaluator()
-    
-    def test_numeric_comparison(self, evaluator):
-        """Test numeric value comparison."""
-        is_correct, confidence = evaluator.compare_numeric(100, 100)
-        assert is_correct is True
-        assert confidence == 1.0
-    
-    def test_numeric_comparison_with_tolerance(self, evaluator):
-        """Test numeric comparison with tolerance."""
-        # 105 vs 100 = 5% error, should be within tolerance
-        is_correct, confidence = evaluator.compare_numeric(105, 100, tolerance=0.05)
-        assert is_correct is True
-        assert confidence >= 0.95
-    
-    def test_numeric_comparison_outside_tolerance(self, evaluator):
-        """Test numeric comparison outside tolerance."""
-        # 110 vs 100 = 10% error, outside 5% tolerance
-        is_correct, confidence = evaluator.compare_numeric(110, 100, tolerance=0.05)
-        assert is_correct is False
-        assert confidence < 0.95
-    
-    def test_list_comparison(self, evaluator):
-        """Test list comparison."""
-        extracted = ["risk1", "risk2", "risk3"]
-        expected = ["risk1", "risk2", "risk3"]
+    Args:
+        data: Data to validate
         
-        precision, recall = evaluator.compare_list(extracted, expected)
-        assert precision == 1.0
-        assert recall == 1.0
+    Returns:
+        True if valid, False otherwise
+    """
+    required_fields = ["revenue", "net_income", "debt_to_equity", "risks", "data_quality"]
     
-    def test_list_comparison_partial_match(self, evaluator):
-        """Test list comparison with partial match."""
-        extracted = ["risk1", "risk2"]
-        expected = ["risk1", "risk2", "risk3"]
-        
-        precision, recall = evaluator.compare_list(extracted, expected)
-        assert 0 < precision <= 1.0
-        assert 0 < recall < 1.0
+    for field in required_fields:
+        if field not in data:
+            return False
+    
+    return True
 
 
-class TestConfiguration:
-    """Test configuration management."""
+def handle_extraction_error(error: Exception, logger: logging.Logger) -> Dict:
+    """
+    Handle extraction errors gracefully.
     
-    def test_config_exists(self):
-        """Test that config is accessible."""
-        config = Config.to_dict()
-        assert isinstance(config, dict)
-    
-    def test_config_has_required_fields(self):
-        """Test that config has required fields."""
-        config = Config.to_dict()
-        required = ["embedding_model", "groq_model", "chunk_size", "max_tokens"]
+    Args:
+        error: Exception that occurred
+        logger: Logger instance
         
-        for field in required:
-            assert field in config
+    Returns:
+        Error response dictionary
+    """
+    logger.error(f"Extraction error: {str(error)}", exc_info=True)
+    
+    return {
+        "error": str(error),
+        "timestamp": datetime.now().isoformat(),
+        "type": type(error).__name__
+    }
 
 
-class TestIntegration:
-    """Integration tests for full pipeline."""
+class Config:
+    """Configuration management."""
     
-    def test_end_to_end_pipeline(self):
-        """Test complete extraction pipeline."""
-        # Setup
-        rag = RAGPipeline()
-        rag.build_pipeline(["data/sample_financial_report.txt"])
-        extractor = FinancialMetricsExtractor()
-        evaluator = ExtractionEvaluator()
-        
-        # Extract
-        context = rag.retrieve("Extract all financial metrics")
-        extracted = extractor.extract_metrics(context)
-        
-        # Evaluate
-        evaluation = evaluator.evaluate_extraction(extracted, GROUND_TRUTH)
-        
-        # Assertions
-        assert extracted is not None
-        assert evaluation is not None
-        assert "overall_accuracy" in evaluation
-        assert evaluation["overall_accuracy"] >= 0.5  # At least 50% accuracy
+    # RAG Configuration
+    EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+    CHUNK_SIZE = 500
+    CHUNK_OVERLAP = 100
+    RETRIEVAL_TOP_K = 3
+    
+    # Extraction Configuration
+    GROQ_MODEL = "llama-3.1-8b-instant"
+    MAX_TOKENS = 1024
+    TEMPERATURE = 0.7
+    
+    # Evaluation Configuration
+    NUMERIC_TOLERANCE = 0.05  # 5% tolerance
+    MIN_CONFIDENCE_THRESHOLD = 0.7
+    
+    # Logging Configuration
+    LOG_FILE = "results/extraction.log"
+    RESULTS_FILE = "results/extraction_results.json"
+    
+    @classmethod
+    def to_dict(cls) -> Dict[str, Any]:
+        """Convert config to dictionary."""
+        return {
+            "embedding_model": cls.EMBEDDING_MODEL,
+            "chunk_size": cls.CHUNK_SIZE,
+            "chunk_overlap": cls.CHUNK_OVERLAP,
+            "retrieval_top_k": cls.RETRIEVAL_TOP_K,
+            "groq_model": cls.GROQ_MODEL,
+            "max_tokens": cls.MAX_TOKENS,
+            "temperature": cls.TEMPERATURE,
+            "numeric_tolerance": cls.NUMERIC_TOLERANCE,
+            "min_confidence_threshold": cls.MIN_CONFIDENCE_THRESHOLD
+        }
 
 
 if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    # Test configuration
+    print("Configuration:")
+    print(json.dumps(Config.to_dict(), indent=2))
